@@ -61,25 +61,7 @@ function printPage() {
     window.print();
 }
 
-const isExporting = ref(false);
 const isExportingExcel = ref(false);
-
-function downloadCsv() {
-    if (!hasReport.value) return;
-    isExporting.value = true;
-    const params = new URLSearchParams({
-        date_from: `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-01`,
-        date_to: getLastDay(),
-    });
-    if (selectedAccountId.value) params.set('account_id', selectedAccountId.value);
-    const link = document.createElement('a');
-    link.href = '/reports/recap?' + params.toString();
-    link.setAttribute('download', '');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => { isExporting.value = false; }, 2000);
-}
 
 function downloadExcel() {
     if (!hasReport.value) return;
@@ -176,16 +158,7 @@ function formatCurrency(v) {
                             </svg>
                             Kembali
                         </button>
-                        <button @click="downloadCsv" :disabled="isExporting" class="btn-secondary text-xs gap-1.5" id="btn-csv">
-                            <svg v-if="isExporting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3" />
-                            </svg>
-                            {{ isExporting ? 'CSV...' : 'CSV' }}
-                        </button>
+
                         <button @click="downloadExcel" :disabled="isExportingExcel" class="btn-secondary text-xs gap-1.5 !text-emerald-700 hover:!text-emerald-800" id="btn-excel">
                             <svg v-if="isExportingExcel" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -512,6 +485,13 @@ function formatCurrency(v) {
     border: 1px solid #FFD0D6;
     background: linear-gradient(135deg, #ffffff, rgba(255, 154, 134, 0.02));
     box-shadow: 0 1px 3px rgba(255, 154, 134, 0.05);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.recap-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(232, 99, 122, 0.08);
+    border-color: #E8637A;
 }
 
 .income-card {
@@ -585,6 +565,14 @@ function formatCurrency(v) {
     border: 1px solid rgba(232, 99, 122, 0.12);
     border-radius: 12px;
     padding: 1.2rem;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.breakdown-col:hover {
+    background: rgba(232, 99, 122, 0.04);
+    border-color: rgba(232, 99, 122, 0.25);
+    box-shadow: 0 6px 18px rgba(232, 99, 122, 0.04);
+    transform: translateY(-2px);
 }
 
 .col-title {
@@ -665,6 +653,14 @@ function formatCurrency(v) {
     border: 1px solid rgba(5, 150, 105, 0.15);
     border-radius: 12px;
     padding: 1rem 1.2rem;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.anomaly-safe-card:hover {
+    transform: translateY(-2px);
+    background: rgba(5, 150, 105, 0.05);
+    border-color: rgba(5, 150, 105, 0.25);
+    box-shadow: 0 6px 18px rgba(5, 150, 105, 0.06);
 }
 
 .safe-icon {
@@ -694,6 +690,14 @@ function formatCurrency(v) {
     border-radius: 12px;
     padding: 1rem 1.2rem;
     margin-bottom: 1rem;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.anomaly-warning-card:hover {
+    transform: translateY(-2px);
+    background: rgba(220, 38, 38, 0.05);
+    border-color: rgba(220, 38, 38, 0.25);
+    box-shadow: 0 6px 18px rgba(220, 38, 38, 0.06);
 }
 
 .warning-icon {
@@ -736,6 +740,14 @@ function formatCurrency(v) {
     padding: 8px 12px;
     border: 1px solid #FFD0D6;
     color: #4A2035;
+}
+
+.anomaly-print-table tbody tr {
+    transition: background-color 0.25s ease;
+}
+
+.anomaly-print-table tbody tr:hover {
+    background-color: rgba(232, 99, 122, 0.03);
 }
 
 .anomaly-badge {

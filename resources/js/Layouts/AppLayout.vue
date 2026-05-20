@@ -6,6 +6,12 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const permissions = computed(() => page.props.permissions || {});
 const sidebarOpen = ref(false);
+const isSidebarCollapsed = ref(localStorage.getItem('sikubi_sidebar_collapsed') === 'true');
+
+function toggleSidebar() {
+    isSidebarCollapsed.value = !isSidebarCollapsed.value;
+    localStorage.setItem('sikubi_sidebar_collapsed', isSidebarCollapsed.value);
+}
 
 // Notification system
 const notifOpen = ref(false);
@@ -92,6 +98,7 @@ const pageTitle = computed(() => {
         '/import': 'Import Data',
         '/transactions': 'Transaksi',
         '/accounts': 'Rekening Bank',
+        '/anomalies/check': 'Cek Anomali',
         '/anomalies': 'Deteksi Anomali',
         '/settings/categories': 'Kategori',
         '/reports/print': 'Cetak Laporan',
@@ -110,8 +117,9 @@ const mainNav = computed(() => {
         { path: '/dashboard', label: 'Dashboard', icon: 'M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
         { path: '/import', label: 'Import Data', icon: 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5', roles: ['ADMIN_KEUANGAN'] },
         { path: '/transactions', label: 'Transaksi', icon: 'M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
-        { path: '/reports/print', label: 'Cetak Laporan', icon: 'M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m0 0a48.03 48.03 0 0110.5 0m-10.5 0V5.625c0-.621.504-1.125 1.125-1.125h8.25c.621 0 1.125.504 1.125 1.125v3.026', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
+        { path: '/reports/print', label: 'Cetak Laporan', icon: 'M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m0 0a48.03 48.03 0 0110.5 0m-10.5 0V5.625c0-.621.504-1.125 1.125-1.125h8.25c.621 0 1.125.504 1.125 1.125v3.026', roles: ['ADMIN_KEUANGAN'] },
         { path: '/accounts', label: 'Rekening Bank', icon: 'M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z', roles: ['ADMIN_KEUANGAN'] },
+        { path: '/anomalies/check', label: 'Cek Anomali', icon: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z', roles: ['DIREKTUR'] },
         { path: '/anomalies', label: 'Deteksi Anomali', icon: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z', roles: ['ADMIN_KEUANGAN'] },
     ];
     return items.filter(i => i.roles.includes(user.value?.role));
@@ -157,61 +165,71 @@ provide('addToast', addToast);
         <!-- Sidebar -->
         <aside
             :class="[
-                'fixed lg:static inset-y-0 left-0 z-50 w-[272px] flex flex-col bg-white border-r border-rose-100/60 transition-transform duration-300 lg:translate-x-0',
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                'fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-rose-100/60 transition-all duration-300 lg:translate-x-0',
+                sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+                isSidebarCollapsed ? 'w-20' : 'w-[272px]'
             ]"
         >
             <!-- Logo -->
-            <div class="flex items-center gap-3 px-6 py-5 border-b border-rose-100/60">
+            <div class="flex items-center gap-3 px-6 py-5 border-b border-rose-100/60" :class="isSidebarCollapsed ? 'justify-center !px-4' : ''">
                 <div class="w-11 h-11 rounded-2xl bg-white border border-rose-200 flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
                     <img src="/images/bigenmi-logo.png" alt="Bigenmi" class="w-8 h-8 object-contain" />
                 </div>
-                <div>
-                    <h1 class="text-lg font-sans font-semibold text-plum tracking-tight">SIKUBI</h1>
-                    <p class="text-[10px] text-surface-500 font-medium tracking-wide uppercase">Sistem Keuangan Bigenmi</p>
+                <div v-show="!isSidebarCollapsed" class="min-w-0 transition-opacity duration-300">
+                    <h1 class="text-lg font-sans font-semibold text-plum tracking-tight truncate">SIKUBI</h1>
+                    <p class="text-[10px] text-surface-500 font-medium tracking-wide uppercase truncate">Sistem Keuangan</p>
                 </div>
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                <p class="px-4 pt-2 pb-2 text-[10px] font-bold text-surface-500 uppercase tracking-widest">Menu Utama</p>
+            <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto" :class="isSidebarCollapsed ? '!px-2' : ''">
+                <p class="px-4 pt-2 pb-2 text-[10px] font-bold text-surface-500 uppercase tracking-widest" v-show="!isSidebarCollapsed">Menu Utama</p>
                 <Link
                     v-for="item in mainNav" :key="item.path"
                     :href="item.path"
-                    :class="[isActive(item.path) ? 'sidebar-link-active' : 'sidebar-link']"
+                    :class="[
+                        isActive(item.path) ? 'sidebar-link-active' : 'sidebar-link',
+                        isSidebarCollapsed ? 'justify-center !px-3' : ''
+                    ]"
+                    :title="isSidebarCollapsed ? item.label : ''"
                     @click="sidebarOpen = false"
                 >
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon" />
                     </svg>
-                    <span>{{ item.label }}</span>
+                    <span v-show="!isSidebarCollapsed">{{ item.label }}</span>
                 </Link>
 
-                <p class="px-4 pt-5 pb-2 text-[10px] font-bold text-surface-500 uppercase tracking-widest">Pengaturan</p>
+                <p class="px-4 pt-5 pb-2 text-[10px] font-bold text-surface-500 uppercase tracking-widest" v-show="!isSidebarCollapsed">Pengaturan</p>
                 <Link
                     v-for="item in settingsNav" :key="item.path"
                     :href="item.path"
-                    :class="[isActive(item.path) ? 'sidebar-link-active' : 'sidebar-link']"
+                    :class="[
+                        isActive(item.path) ? 'sidebar-link-active' : 'sidebar-link',
+                        isSidebarCollapsed ? 'justify-center !px-3' : ''
+                    ]"
+                    :title="isSidebarCollapsed ? item.label : ''"
                     @click="sidebarOpen = false"
                 >
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon" />
                     </svg>
-                    <span>{{ item.label }}</span>
+                    <span v-show="!isSidebarCollapsed">{{ item.label }}</span>
                 </Link>
             </nav>
 
             <!-- User Profile -->
-            <div class="px-4 py-4 border-t border-rose-100/60">
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-cream-200/50 hover:bg-cream-300/50 transition-colors">
+            <div class="px-4 py-4 border-t border-rose-100/60" :class="isSidebarCollapsed ? '!px-2' : ''">
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-cream-200/50 hover:bg-cream-300/50 transition-colors" :class="isSidebarCollapsed ? 'justify-center !p-2' : ''">
                     <div class="w-9 h-9 rounded-xl bg-gradient-rose flex items-center justify-center text-sm font-bold text-white shadow-soft flex-shrink-0">
                         {{ userInitial }}
                     </div>
-                    <Link href="/profile" class="flex-1 min-w-0 cursor-pointer" @click="sidebarOpen = false">
+                    <Link v-show="!isSidebarCollapsed" href="/profile" class="flex-1 min-w-0 cursor-pointer" @click="sidebarOpen = false">
                         <p class="text-sm font-semibold text-plum truncate hover:text-rose-gold transition-colors">{{ user?.name || 'User' }}</p>
                         <p class="text-[10px] text-surface-500 font-medium">{{ roleLabel }}</p>
                     </Link>
                     <Link
+                        v-show="!isSidebarCollapsed"
                         href="/logout"
                         method="post"
                         as="button"
@@ -238,6 +256,17 @@ provide('addToast', addToast);
                     >
                         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                        </svg>
+                    </button>
+                    <!-- Desktop sidebar toggle button -->
+                    <button
+                        class="hidden lg:flex p-2 text-plum hover:text-rose-gold rounded-xl hover:bg-rose-50 active:bg-rose-100 transition-all duration-300 active:scale-95 flex-shrink-0"
+                        @click.stop="toggleSidebar"
+                        :title="isSidebarCollapsed ? 'Buka Sidebar' : 'Tutup Sidebar'"
+                        aria-label="Toggle sidebar"
+                    >
+                        <svg class="w-5 h-5 transition-transform duration-300" :class="isSidebarCollapsed ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
                         </svg>
                     </button>
                     <div>

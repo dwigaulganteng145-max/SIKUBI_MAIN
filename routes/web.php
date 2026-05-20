@@ -27,15 +27,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Settings — read-only for Direktur, CRUD for Admin (enforced in controller)
     Route::get('/settings/categories', [SettingsController::class, 'categories'])->name('settings.categories');
-
-    // Reports & Exports
-    Route::get('/reports/recap', [ReportController::class, 'recapCsv'])->name('reports.recap');
-    Route::get('/reports/recap/excel', [ReportController::class, 'recapExcel'])->name('reports.excel');
-    Route::get('/reports/print', [ReportController::class, 'printRecap'])->name('reports.print');
 });
 
 // ── Admin Keuangan only ──
 Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function () {
+    // Reports & Exports
+    Route::get('/reports/recap', [ReportController::class, 'recapCsv'])->name('reports.recap');
+    Route::get('/reports/recap/excel', [ReportController::class, 'recapExcel'])->name('reports.excel');
+    Route::get('/reports/print', [ReportController::class, 'printRecap'])->name('reports.print');
+
     // Transactions (edit)
     Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
     Route::get('/transactions/export', [TransactionController::class, 'export'])->name('transactions.export');
@@ -68,6 +68,7 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
 
 // ── Direktur only ──
 Route::middleware(['auth', 'verified', 'role:DIREKTUR'])->group(function () {
+    Route::get('/anomalies/check', [AnomalyController::class, 'pimpinanIndex'])->name('anomalies.check');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');

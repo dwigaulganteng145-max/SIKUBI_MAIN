@@ -33,7 +33,7 @@ class DashboardController extends Controller
             $q->forAccount($accountId);
             if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
             if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
-        })->where('is_dismissed', false)->count();
+        })->where('is_dismissed', false)->where('is_reviewed', false)->count();
         $unclassifiedCount = (clone $summaryQuery)->where('classification_method', 'UNCLASSIFIED')->count();
 
         // Cashflow chart data — use date range or default

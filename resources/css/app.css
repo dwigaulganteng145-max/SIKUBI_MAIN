@@ -44,24 +44,25 @@
         box-shadow: 0 2px 8px rgba(232, 99, 122, 0.06), 0 1px 3px rgba(0,0,0,0.03);
     }
     .glass-card-hover {
-        @apply glass-card transition-all duration-300;
+        @apply glass-card transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)];
     }
     .glass-card-hover:hover {
-        box-shadow: 0 8px 28px rgba(232, 99, 122, 0.12), 0 2px 8px rgba(0,0,0,0.05);
-        transform: translateY(-2px);
+        @apply border-rose-200/80;
+        box-shadow: 0 12px 32px rgba(232, 99, 122, 0.12), 0 4px 12px rgba(0,0,0,0.03);
+        transform: translateY(-4px);
     }
 
     /* ── Buttons ── */
     .btn-primary {
         @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
                text-white font-semibold text-sm
-               rounded-xl transition-all duration-200 active:scale-[0.98];
+               rounded-xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97];
         background: linear-gradient(135deg, #E8637A 0%, #D44A62 100%);
-        box-shadow: 0 4px 14px rgba(232, 99, 122, 0.3);
+        box-shadow: 0 4px 14px rgba(232, 99, 122, 0.25);
     }
     .btn-primary:hover {
-        box-shadow: 0 6px 20px rgba(232, 99, 122, 0.4);
-        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(232, 99, 122, 0.4);
+        transform: translateY(-2px) scale(1.02);
     }
     .btn-primary:disabled {
         @apply opacity-50 cursor-not-allowed;
@@ -73,11 +74,13 @@
         @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
                bg-white text-plum font-medium text-sm
                rounded-xl border border-rose-200
-               transition-all duration-200 active:scale-[0.98];
+               transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97];
         box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .btn-secondary:hover {
-        @apply border-rose-gold bg-rose-50;
+        @apply border-rose-gold bg-rose-50/50 text-rose-gold;
+        box-shadow: 0 4px 12px rgba(232, 99, 122, 0.08);
+        transform: translateY(-1px) scale(1.01);
     }
 
     .btn-danger {
@@ -93,10 +96,11 @@
     .btn-ghost {
         @apply inline-flex items-center justify-center gap-2 px-4 py-2
                text-surface-600 font-medium text-sm
-               rounded-xl transition-all duration-200;
+               rounded-xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)];
     }
     .btn-ghost:hover {
-        @apply text-plum bg-rose-50/60;
+        @apply text-rose-gold bg-rose-50/70;
+        transform: translateY(-1px) scale(1.01);
     }
 
     /* ── Inputs ── */
@@ -104,7 +108,11 @@
         @apply w-full px-4 py-2.5 bg-cream-100 border border-surface-300/60
                rounded-xl text-plum placeholder-surface-500 text-[16px] sm:text-sm
                focus:border-rose-gold focus:ring-2 focus:ring-rose-gold/20 focus:outline-none
-               transition-all duration-200;
+               transition-all duration-300;
+    }
+    .input-field:hover:not(:focus) {
+        @apply border-rose-200;
+        background-color: #FDF9F5;
     }
     /* Compact filter variant — for inline filter bars */
     .filter-field {
@@ -112,7 +120,10 @@
                rounded-lg text-plum placeholder-surface-400
                text-xs sm:text-[13px]
                focus:border-rose-gold focus:ring-1 focus:ring-rose-gold/15 focus:outline-none
-               transition-all duration-200 shadow-sm;
+               transition-all duration-300 shadow-sm;
+    }
+    .filter-field:hover:not(:focus) {
+        @apply border-rose-300/60;
     }
     .label-text {
         @apply block text-sm font-medium text-plum/80 mb-1.5;
@@ -177,7 +188,10 @@
     .sidebar-link {
         @apply flex items-center gap-3 px-4 py-2.5 rounded-xl
                text-surface-600 hover:text-plum hover:bg-rose-50/60
-               transition-all duration-200 text-sm font-medium;
+               transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] text-sm font-medium;
+    }
+    .sidebar-link:hover {
+        transform: translateX(4px);
     }
     .sidebar-link-active {
         @apply flex items-center gap-3 px-4 py-2.5 rounded-xl
