@@ -12,6 +12,8 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'role', 'avatar_url', 'last_login_at',
+        'can_import', 'can_manage_accounts', 'can_manage_settings',
+        'can_detect_anomalies', 'can_edit_transactions', 'can_manage_cash_transactions',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -21,6 +23,12 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'last_login_at' => 'datetime',
+            'can_import' => 'boolean',
+            'can_manage_accounts' => 'boolean',
+            'can_manage_settings' => 'boolean',
+            'can_detect_anomalies' => 'boolean',
+            'can_edit_transactions' => 'boolean',
+            'can_manage_cash_transactions' => 'boolean',
         ];
     }
 

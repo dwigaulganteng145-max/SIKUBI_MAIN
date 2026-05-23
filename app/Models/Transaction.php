@@ -58,6 +58,9 @@ class Transaction extends Model
 
     public function scopeForAccount($query, $accountId)
     {
+        if ($accountId === 'cash') {
+            return $query->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+        }
         if ($accountId) {
             return $query->where('bank_account_id', $accountId);
         }

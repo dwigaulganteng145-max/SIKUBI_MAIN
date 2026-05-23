@@ -51,7 +51,9 @@ class ReportController extends Controller
             ->orderBy('transaction_date')
             ->orderBy('id');
 
-        if ($accountId) {
+        if ($accountId === 'cash') {
+            $query->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+        } elseif ($accountId) {
             $query->where('bank_account_id', $accountId);
         }
 
@@ -64,7 +66,7 @@ class ReportController extends Controller
                 'type_raw'    => $tx->type,
                 'amount'      => $tx->amount,
                 'category'    => $tx->category->name ?? '-',
-                'account'     => $tx->bankAccount->account_alias ?? $tx->bankAccount->bank_name ?? '-',
+                'account'     => $tx->bankAccount->account_alias ?? $tx->bankAccount->bank_name ?? ($tx->source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-'),
             ];
         });
 
@@ -76,7 +78,11 @@ class ReportController extends Controller
         $incomeBreakdown = Transaction::debit()
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->when($accountId, function($q) use ($accountId) {
-                $q->where('bank_account_id', $accountId);
+                if ($accountId === 'cash') {
+                    $q->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+                } else {
+                    $q->where('bank_account_id', $accountId);
+                }
             })
             ->select('category_id', \Illuminate\Support\Facades\DB::raw('SUM(amount) as total_amount'), \Illuminate\Support\Facades\DB::raw('COUNT(*) as total_count'))
             ->groupBy('category_id')
@@ -97,7 +103,11 @@ class ReportController extends Controller
         $expenseBreakdown = Transaction::credit()
             ->whereBetween('transaction_date', [$startDate, $endDate])
             ->when($accountId, function($q) use ($accountId) {
-                $q->where('bank_account_id', $accountId);
+                if ($accountId === 'cash') {
+                    $q->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+                } else {
+                    $q->where('bank_account_id', $accountId);
+                }
             })
             ->select('category_id', \Illuminate\Support\Facades\DB::raw('SUM(amount) as total_amount'), \Illuminate\Support\Facades\DB::raw('COUNT(*) as total_count'))
             ->groupBy('category_id')
@@ -118,7 +128,9 @@ class ReportController extends Controller
         $anomalyFlags = AnomalyFlag::where('severity', 'HIGH')
             ->whereHas('transaction', function ($q) use ($startDate, $endDate, $accountId) {
                 $q->whereBetween('transaction_date', [$startDate, $endDate]);
-                if ($accountId) {
+                if ($accountId === 'cash') {
+                    $q->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+                } elseif ($accountId) {
                     $q->where('bank_account_id', $accountId);
                 }
             })
@@ -137,7 +149,7 @@ class ReportController extends Controller
                     'description'  => $flag->transaction ? $flag->transaction->description : '-',
                     'amount'       => $flag->transaction ? (float)$flag->transaction->amount : 0,
                     'type'         => $flag->transaction ? $flag->transaction->type : '-',
-                    'account'      => $flag->transaction && $flag->transaction->bankAccount ? ($flag->transaction->bankAccount->account_alias ?: $flag->transaction->bankAccount->bank_name) : '-',
+                    'account'      => $flag->transaction && $flag->transaction->bankAccount ? ($flag->transaction->bankAccount->account_alias ?: $flag->transaction->bankAccount->bank_name) : ($flag->transaction && $flag->transaction->source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-'),
                 ];
             });
 
@@ -205,21 +217,44 @@ class ReportController extends Controller
             ->select('bank_account_id', 'type', \Illuminate\Support\Facades\DB::raw('SUM(amount) as total'))
             ->groupBy('bank_account_id', 'type');
 
-        if ($accountId) $accountSummaryQuery->where('bank_account_id', $accountId);
+        if ($accountId === 'cash') {
+            $accountSummaryQuery->where('id', 0); // dummy to empty bank results
+        } elseif ($accountId) {
+            $accountSummaryQuery->where('bank_account_id', $accountId);
+        }
         if ($dateFrom) $accountSummaryQuery->where('transaction_date', '>=', $dateFrom);
         if ($dateTo) $accountSummaryQuery->where('transaction_date', '<=', $dateTo);
 
         $accountTotals = $accountSummaryQuery->get()->groupBy('bank_account_id');
         
-        $accounts = BankAccount::query();
-        if ($accountId) $accounts->where('id', $accountId);
-        
-        foreach ($accounts->get() as $acc) {
-            $accTotals = $accountTotals->get($acc->id, collect());
-            $debit = $accTotals->where('type', 'DEBIT')->first()->total ?? 0;
-            $credit = $accTotals->where('type', 'CREDIT')->first()->total ?? 0;
+        if ($accountId !== 'cash') {
+            $accounts = BankAccount::query();
+            if ($accountId) $accounts->where('id', $accountId);
             
-            fputcsv($out, [$acc->bank_name, $acc->account_alias ?? '-', $debit, $credit, $debit - $credit]);
+            foreach ($accounts->get() as $acc) {
+                $accTotals = $accountTotals->get($acc->id, collect());
+                $debit = $accTotals->where('type', 'DEBIT')->first()->total ?? 0;
+                $credit = $accTotals->where('type', 'CREDIT')->first()->total ?? 0;
+                
+                fputcsv($out, [$acc->bank_name, $acc->account_alias ?? '-', $debit, $credit, $debit - $credit]);
+            }
+        }
+
+        // Add cash summary row if searching all or specifically cash!
+        if (!$accountId || $accountId === 'cash') {
+            $cashQuery = Transaction::query()
+                ->select('type', \Illuminate\Support\Facades\DB::raw('SUM(amount) as total'))
+                ->whereNull('bank_account_id')
+                ->where('source', 'CASH_MANUAL')
+                ->groupBy('type');
+            if ($dateFrom) $cashQuery->where('transaction_date', '>=', $dateFrom);
+            if ($dateTo) $cashQuery->where('transaction_date', '<=', $dateTo);
+
+            $cashTotals = $cashQuery->get();
+            $cashDebit = $cashTotals->where('type', 'DEBIT')->first()->total ?? 0;
+            $cashCredit = $cashTotals->where('type', 'CREDIT')->first()->total ?? 0;
+
+            fputcsv($out, ['Transaksi Tunai', 'Tunai', $cashDebit, $cashCredit, $cashDebit - $cashCredit]);
         }
         fputcsv($out, []);
 
@@ -231,7 +266,11 @@ class ReportController extends Controller
             ->select('category_id', 'type', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'), \Illuminate\Support\Facades\DB::raw('SUM(amount) as total'))
             ->groupBy('category_id', 'type');
 
-        if ($accountId) $categorySummaryQuery->where('bank_account_id', $accountId);
+        if ($accountId === 'cash') {
+            $categorySummaryQuery->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+        } elseif ($accountId) {
+            $categorySummaryQuery->where('bank_account_id', $accountId);
+        }
         if ($dateFrom) $categorySummaryQuery->where('transaction_date', '>=', $dateFrom);
         if ($dateTo) $categorySummaryQuery->where('transaction_date', '<=', $dateTo);
 
@@ -265,7 +304,11 @@ class ReportController extends Controller
             ->orderByDesc('transaction_date')
             ->orderByDesc('id');
         
-        if ($accountId) $txQuery->where('bank_account_id', $accountId);
+        if ($accountId === 'cash') {
+            $txQuery->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+        } elseif ($accountId) {
+            $txQuery->where('bank_account_id', $accountId);
+        }
         if ($dateFrom) $txQuery->where('transaction_date', '>=', $dateFrom);
         if ($dateTo) $txQuery->where('transaction_date', '<=', $dateTo);
 
@@ -276,7 +319,7 @@ class ReportController extends Controller
                     $tx->description,
                     $tx->category->name ?? 'Unclassified',
                     $tx->type,
-                    $tx->bankAccount->account_alias ?? $tx->bankAccount->bank_name ?? '-',
+                    $tx->bankAccount->account_alias ?? $tx->bankAccount->bank_name ?? ($tx->source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-'),
                     $tx->amount
                 ]);
             }
@@ -301,14 +344,41 @@ class ReportController extends Controller
         // Generate Excel using PhpSpreadsheet
         $spreadsheet = new Spreadsheet();
 
-        if ($accountId) {
-            $accounts = BankAccount::where('id', $accountId)->get();
+        $sheetsToExport = [];
+
+        if ($accountId === 'cash') {
+            $sheetsToExport[] = [
+                'type' => 'cash',
+                'name' => 'Transaksi Tunai',
+                'title' => 'Transaksi Tunai',
+            ];
+        } elseif ($accountId) {
+            $acc = BankAccount::findOrFail($accountId);
+            $sheetsToExport[] = [
+                'type' => 'bank',
+                'id' => $acc->id,
+                'name' => $acc->account_alias ?: $acc->bank_name,
+                'title' => $acc->account_alias ?: $acc->bank_name,
+            ];
         } else {
             $accounts = BankAccount::orderBy('id', 'asc')->get();
+            foreach ($accounts as $acc) {
+                $sheetsToExport[] = [
+                    'type' => 'bank',
+                    'id' => $acc->id,
+                    'name' => $acc->account_alias ?: $acc->bank_name,
+                    'title' => $acc->account_alias ?: $acc->bank_name,
+                ];
+            }
+            $sheetsToExport[] = [
+                'type' => 'cash',
+                'name' => 'Transaksi Tunai',
+                'title' => 'Transaksi Tunai',
+            ];
         }
 
-        // If no bank accounts exist in the system, create a fallback empty sheet
-        if ($accounts->isEmpty()) {
+        // If no bank accounts and no cash exist in the system, create a fallback empty sheet
+        if (empty($sheetsToExport)) {
             $sheet = $spreadsheet->getActiveSheet();
             $sheet->setTitle('Laporan');
             $sheet->setShowGridlines(true);
@@ -316,7 +386,7 @@ class ReportController extends Controller
             $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
         } else {
             $sheetIndex = 0;
-            foreach ($accounts as $acc) {
+            foreach ($sheetsToExport as $item) {
                 if ($sheetIndex === 0) {
                     $sheet = $spreadsheet->getActiveSheet();
                 } else {
@@ -324,7 +394,7 @@ class ReportController extends Controller
                 }
 
                 // Clean and format sheet title (Max 31 characters, remove forbidden characters)
-                $sheetTitle = str_replace(['\\', '/', '?', '*', ':', '[', ']'], '', $acc->account_alias ?: $acc->bank_name);
+                $sheetTitle = str_replace(['\\', '/', '?', '*', ':', '[', ']'], '', $item['title']);
                 $sheetTitle = substr($sheetTitle, 0, 31);
                 if (empty($sheetTitle)) {
                     $sheetTitle = 'Rekening ' . ($sheetIndex + 1);
@@ -332,15 +402,28 @@ class ReportController extends Controller
                 $sheet->setTitle($sheetTitle);
                 $sheet->setShowGridlines(true);
 
-                // Calculate opening balance specifically for this bank account
-                $inBefore = Transaction::where('transaction_date', '<', $startDate)->where('bank_account_id', $acc->id);
-                $outBefore = Transaction::where('transaction_date', '<', $startDate)->where('bank_account_id', $acc->id);
-                $saldoAwal = $inBefore->where('type', 'DEBIT')->sum('amount') - $outBefore->where('type', 'CREDIT')->sum('amount');
+                // Calculate opening balance
+                if ($item['type'] === 'cash') {
+                    $inBefore = Transaction::where('transaction_date', '<', $startDate)->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+                    $outBefore = Transaction::where('transaction_date', '<', $startDate)->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+                    $saldoAwal = $inBefore->where('type', 'DEBIT')->sum('amount') - $outBefore->where('type', 'CREDIT')->sum('amount');
+                } else {
+                    $inBefore = Transaction::where('transaction_date', '<', $startDate)->where('bank_account_id', $item['id']);
+                    $outBefore = Transaction::where('transaction_date', '<', $startDate)->where('bank_account_id', $item['id']);
+                    $saldoAwal = $inBefore->where('type', 'DEBIT')->sum('amount') - $outBefore->where('type', 'CREDIT')->sum('amount');
+                }
 
-                // Query transactions specifically for this bank account
-                $query = Transaction::with(['category', 'bankAccount'])
-                    ->whereBetween('transaction_date', [$startDate, $endDate])
-                    ->where('bank_account_id', $acc->id);
+                // Query transactions
+                if ($item['type'] === 'cash') {
+                    $query = Transaction::with(['category', 'bankAccount'])
+                        ->whereBetween('transaction_date', [$startDate, $endDate])
+                        ->whereNull('bank_account_id')
+                        ->where('source', 'CASH_MANUAL');
+                } else {
+                    $query = Transaction::with(['category', 'bankAccount'])
+                        ->whereBetween('transaction_date', [$startDate, $endDate])
+                        ->where('bank_account_id', $item['id']);
+                }
 
                 // Chronological order
                 $transactions = $query->get()->sortBy(function ($tx) {
@@ -348,7 +431,7 @@ class ReportController extends Controller
                 })->values();
 
                 // Header Title
-                $accountName = "REKAP " . strtoupper($acc->account_alias ?: $acc->bank_name);
+                $accountName = "REKAP " . strtoupper($item['name']);
                 $sheet->setCellValue('A1', $accountName);
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 

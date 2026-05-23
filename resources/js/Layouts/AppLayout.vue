@@ -179,7 +179,7 @@ provide('addToast', addToast);
                 </div>
                 <div v-show="!isSidebarCollapsed" class="min-w-0 transition-opacity duration-300">
                     <h1 class="text-lg font-sans font-semibold text-plum tracking-tight truncate">SIKUBI</h1>
-                    <p class="text-[10px] text-surface-500 font-medium tracking-wide uppercase truncate">Sistem Keuangan</p>
+                    <p class="text-[10px] text-surface-500 font-medium tracking-wide uppercase truncate">Sistem Keuangan Bigenmi</p>
                 </div>
             </div>
 

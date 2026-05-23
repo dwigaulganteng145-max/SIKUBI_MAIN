@@ -26,13 +26,13 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'permissions' => [
-                'canImport' => $user?->isAdmin() ?? false,
-                'canManageAccounts' => $user?->isAdmin() ?? false,
-                'canManageSettings' => $user?->isAdmin() ?? false,
-                'canDetectAnomalies' => $user?->isAdmin() ?? false,
+                'canImport' => $user?->isAdmin() && ($user->can_import ?? true),
+                'canManageAccounts' => $user?->isAdmin() && ($user->can_manage_accounts ?? true),
+                'canManageSettings' => $user?->isAdmin() && ($user->can_manage_settings ?? true),
+                'canDetectAnomalies' => $user?->isAdmin() && ($user->can_detect_anomalies ?? true),
                 'canManageUsers' => $user?->isDirektur() ?? false,
-                'canEditTransactions' => $user?->isAdmin() ?? false,
-                'canManageCashTransactions' => $user?->isAdmin() ?? false,
+                'canEditTransactions' => $user?->isAdmin() && ($user->can_edit_transactions ?? true),
+                'canManageCashTransactions' => $user?->isAdmin() && ($user->can_manage_cash_transactions ?? true),
             ],
             'notifications' => fn () => $user ? $this->getNotifications($user) : ['items' => [], 'unread_count' => 0],
             'flash' => [
@@ -45,30 +45,29 @@ class HandleInertiaRequests extends Middleware
     private function getNotifications($user): array
     {
         $items = [];
-        // Only admin gets anomaly & import notifications
+        // 1. Unreviewed anomalies (both Admin & Pimpinan can see this!)
+        $unreviewedAnomalies = AnomalyFlag::where('is_reviewed', false)
+            ->where('is_dismissed', false)
+            ->orderByDesc('detected_at')
+            ->limit(5)
+            ->with(['transaction:id,description,amount,type'])
+            ->get();
+
+        foreach ($unreviewedAnomalies as $flag) {
+            $items[] = [
+                'id' => 'anomaly_' . $flag->id,
+                'type' => 'anomaly',
+                'severity' => $flag->severity,
+                'title' => $flag->severity === 'HIGH' ? 'Anomali Kritis Terdeteksi' : 'Anomali Terdeteksi',
+                'message' => mb_substr($flag->reason, 0, 80) . (mb_strlen($flag->reason) > 80 ? '...' : ''),
+                'url' => $user->isDirektur() ? '/anomalies/check' : '/anomalies',
+                'time' => $flag->detected_at?->toISOString(),
+                'read' => false,
+            ];
+        }
+
+        // 2. Recent imports (last 24h) - only Admin
         if ($user->isAdmin()) {
-            // 1. Unreviewed anomalies (HIGH first)
-            $unreviewedAnomalies = AnomalyFlag::where('is_reviewed', false)
-                ->where('is_dismissed', false)
-                ->orderByDesc('detected_at')
-                ->limit(5)
-                ->with(['transaction:id,description,amount,type'])
-                ->get();
-
-            foreach ($unreviewedAnomalies as $flag) {
-                $items[] = [
-                    'id' => 'anomaly_' . $flag->id,
-                    'type' => 'anomaly',
-                    'severity' => $flag->severity,
-                    'title' => $flag->severity === 'HIGH' ? 'Anomali Kritis Terdeteksi' : 'Anomali Terdeteksi',
-                    'message' => mb_substr($flag->reason, 0, 80) . (mb_strlen($flag->reason) > 80 ? '...' : ''),
-                    'url' => '/anomalies',
-                    'time' => $flag->detected_at?->toISOString(),
-                    'read' => false,
-                ];
-            }
-
-            // 2. Recent imports (last 24h)
             $recentImports = ImportBatch::where('created_at', '>=', now()->subDay())
                 ->orderByDesc('created_at')
                 ->limit(3)

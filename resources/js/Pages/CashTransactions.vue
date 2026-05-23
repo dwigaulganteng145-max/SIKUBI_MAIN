@@ -90,7 +90,7 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
         <div class="space-y-6 animate-fade-in">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 class="page-title text-lg sm:text-2xl">Transaksi Tunai</h1>
+                    <h1 class="page-title text-lg sm:text-2xl font-medium">Transaksi Tunai</h1>
                     <p class="text-xs sm:text-sm text-surface-600 mt-0.5">
                         {{ canManage ? 'Kelola transaksi kas tunai secara manual' : 'Riwayat transaksi kas tunai' }}
                     </p>
@@ -105,7 +105,7 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
             <Transition name="slide-up">
                 <div v-if="showForm && canManage" class="glass-card p-6 border-l-4 border-rose-400/60">
                     <h3 class="text-sm font-semibold text-plum mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-rose-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                        <svg class="w-5 h-5 text-rose-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         Tambah Transaksi Tunai Baru
                     </h3>
                     <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -139,7 +139,7 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                             </select>
                         </div>
                         <div class="sm:col-span-2 lg:col-span-3 flex justify-end">
-                            <button type="submit" :disabled="form.processing" class="btn-primary gap-1.5">
+                            <button type="submit" :disabled="form.processing" class="btn-primary gap-1.5 text-sm">
                                 <svg v-if="form.processing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                                 <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                                 {{ form.processing ? 'Menyimpan...' : 'Simpan Transaksi' }}
@@ -149,19 +149,29 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                 </div>
             </Transition>
 
-            <!-- Filters -->
+            <!-- Filters & List -->
             <div class="glass-card p-4 sm:p-5">
-                <div class="space-y-2.5 mb-5">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="filter-field flex-1 min-w-[140px]" />
-                        <select v-model="type" @change="applyFilters" class="filter-field !w-auto min-w-[120px]">
+                <!-- Gorgeous Aligned Responsive Grid Filter -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end mb-6">
+                    <div class="sm:col-span-4">
+                        <label class="label-text">Pencarian</label>
+                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="filter-field w-full" />
+                    </div>
+                    <div class="sm:col-span-3">
+                        <label class="label-text">Tipe Transaksi</label>
+                        <select v-model="type" @change="applyFilters" class="filter-field w-full">
                             <option value="">Semua Tipe</option>
                             <option value="DEBIT">Pendapatan</option>
                             <option value="CREDIT">Pengeluaran</option>
                         </select>
-                        <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4">Cari</button>
                     </div>
-                    <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" @update="onDateUpdate" />
+                    <div class="sm:col-span-4">
+                        <label class="label-text">Rentang Tanggal</label>
+                        <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" @update="onDateUpdate" />
+                    </div>
+                    <div class="sm:col-span-1">
+                        <button @click="applyFilters" class="btn-primary w-full text-xs !py-2.5">Cari</button>
+                    </div>
                 </div>
 
                 <!-- Summary -->
@@ -171,7 +181,7 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
 
                 <!-- Empty State -->
                 <div v-if="!transactions.data.length" class="text-center py-12 text-surface-500">
-                    <svg class="w-14 h-14 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                    <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18m-18 0v-5.25A2.25 2.25 0 015.25 6h13.5A2.25 2.25 0 0121 8.25v5.25m-18 0V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18v-4.5" /></svg>
                     <p class="font-medium text-surface-600">Belum ada transaksi tunai.</p>
                     <p v-if="canManage" class="text-xs mt-1">Klik tombol "Tambah Transaksi" untuk menambahkan transaksi tunai pertama.</p>
                     <p v-else class="text-xs mt-1">Admin belum menambahkan transaksi tunai.</p>
@@ -184,15 +194,21 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                             <thead>
                                 <tr>
                                     <th>Tanggal</th>
+                                    <th>Tipe</th>
                                     <th>Deskripsi</th>
                                     <th>Kategori</th>
                                     <th class="text-right">Jumlah</th>
-                                    <th v-if="canManage" class="text-center w-16"></th>
+                                    <th v-if="canManage" class="text-center w-16">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="tx in transactions.data" :key="tx.id">
                                     <td class="whitespace-nowrap">{{ formatDate(tx.transaction_date) }}</td>
+                                    <td class="whitespace-nowrap">
+                                        <span :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold', tx.type === 'DEBIT' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200']">
+                                            {{ tx.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}
+                                        </span>
+                                    </td>
                                     <td class="max-w-xs truncate" :title="tx.description">{{ tx.description }}</td>
                                     <td>
                                         <span v-if="tx.category" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm transition-all hover:scale-[1.02]" :style="{ background: tx.category.color + '12', color: tx.category.color, border: '1px solid ' + tx.category.color + '30' }">
@@ -227,6 +243,9 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                                 </p>
                             </div>
                             <div class="flex justify-between items-center text-xs text-surface-500">
+                                <span :class="['inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold', tx.type === 'DEBIT' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700']">
+                                    {{ tx.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}
+                                </span>
                                 <span>{{ formatDate(tx.transaction_date) }}</span>
                                 <span v-if="tx.category" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold" :style="{ background: tx.category.color + '12', color: tx.category.color }">
                                     {{ tx.category.name }}

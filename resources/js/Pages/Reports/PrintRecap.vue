@@ -128,6 +128,7 @@ function formatCurrency(v) {
                             <label class="label-text">Rekening (Opsional)</label>
                             <select v-model="selectedAccountId" class="input-field" id="account-selector">
                                 <option value="">Semua Rekening</option>
+                                <option value="cash">💵 Transaksi Tunai</option>
                                 <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                             </select>
                         </div>

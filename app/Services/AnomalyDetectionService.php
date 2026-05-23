@@ -14,12 +14,14 @@ class AnomalyDetectionService
      * either in a single transaction or accumulated across multiple transactions.
      * Groups by sender description keyword to identify unique senders.
      */
-    public function detectIncomeAnomalies(?int $bankAccountId = null): array
+    public function detectIncomeAnomalies($bankAccountId = null): array
     {
         $threshold = 10_000_000; // Rp 10 juta
 
         $query = Transaction::debit(); // DEBIT = money coming IN to Bigenmi
-        if ($bankAccountId) {
+        if ($bankAccountId === 'cash') {
+            $query->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+        } elseif ($bankAccountId) {
             $query->where('bank_account_id', $bankAccountId);
         }
 
@@ -51,7 +53,7 @@ class AnomalyDetectionService
         // Strategy 2: Accumulated from same sender >= 10 juta
         // Group by normalized description (first meaningful keyword)
         $senderGroups = $transactions->groupBy(function ($tx) {
-            return $this->normalizeSender($tx->description);
+            return $this->normalizeSender($tx);
         });
 
         foreach ($senderGroups as $sender => $txGroup) {
@@ -93,13 +95,16 @@ class AnomalyDetectionService
      * exceeds the total incoming from that same account.
      * This flags imbalanced relationships (paying more than received).
      */
-    public function detectExpenseAnomalies(?int $bankAccountId = null): array
+    public function detectExpenseAnomalies($bankAccountId = null): array
     {
         // Get all transactions grouped by normalized counterparty
         $debitQuery = Transaction::debit(); // Incoming
         $creditQuery = Transaction::credit(); // Outgoing
 
-        if ($bankAccountId) {
+        if ($bankAccountId === 'cash') {
+            $debitQuery->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+            $creditQuery->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+        } elseif ($bankAccountId) {
             $debitQuery->where('bank_account_id', $bankAccountId);
             $creditQuery->where('bank_account_id', $bankAccountId);
         }
@@ -110,7 +115,7 @@ class AnomalyDetectionService
         // Build incoming totals by counterparty
         $incomingByParty = [];
         foreach ($incoming as $tx) {
-            $party = $this->normalizeSender($tx->description);
+            $party = $this->normalizeSender($tx);
             if ($party === 'LAINNYA') continue;
             $incomingByParty[$party] = ($incomingByParty[$party] ?? 0) + (float) $tx->amount;
         }
@@ -119,7 +124,7 @@ class AnomalyDetectionService
         $outgoingByParty = [];
         $outgoingTxByParty = [];
         foreach ($outgoing as $tx) {
-            $party = $this->normalizeSender($tx->description);
+            $party = $this->normalizeSender($tx);
             if ($party === 'LAINNYA') continue;
             $outgoingByParty[$party] = ($outgoingByParty[$party] ?? 0) + (float) $tx->amount;
             if (!isset($outgoingTxByParty[$party])) {
@@ -192,9 +197,13 @@ class AnomalyDetectionService
      * Normalize transaction description to extract the actual person/account name.
      * Uses pattern-specific extraction for each bank transaction format.
      */
-    private function normalizeSender(string $description): string
+    private function normalizeSender(Transaction $tx): string
     {
-        $desc = strtoupper(trim($description));
+        if ($tx->source === 'CASH_MANUAL') {
+            return strtoupper(trim($tx->description));
+        }
+
+        $desc = strtoupper(trim($tx->description));
 
         // Skip system/fee transactions
         $skipPatterns = ['BIAYA ADM', 'BUNGA', 'PAJAK', 'TARIKAN ATM', 'SETORAN TUNAI', 'BIAYA TXN'];

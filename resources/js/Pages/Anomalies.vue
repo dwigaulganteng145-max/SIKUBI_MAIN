@@ -174,7 +174,7 @@ function subtypeLabel(method) {
                             <p class="text-sm font-semibold text-plum truncate">{{ flag.transaction?.description }}</p>
                             <p class="text-xs text-surface-500 mt-0.5">
                                 {{ formatDate(flag.transaction?.transaction_date) }}
-                                · {{ flag.transaction?.bank_account?.account_alias || flag.transaction?.bank_account?.bank_name }}
+                                · {{ flag.transaction?.bank_account?.account_alias || flag.transaction?.bank_account?.bank_name || (flag.transaction?.source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-') }}
                             </p>
                             <p :class="['text-base font-bold mt-1', flag.transaction?.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                 {{ formatCurrency(flag.transaction?.amount || 0) }}

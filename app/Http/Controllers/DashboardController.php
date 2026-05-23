@@ -61,7 +61,7 @@ class DashboardController extends Controller
             ]);
 
         // Recent transactions
-        $recentTxQuery = Transaction::with('category:id,name,color')
+        $recentTxQuery = Transaction::with(['category:id,name,color', 'bankAccount:id,bank_name,account_alias'])
             ->forAccount($accountId)
             ->orderByDesc('transaction_date');
         if ($dateFrom) $recentTxQuery->where('transaction_date', '>=', $dateFrom);

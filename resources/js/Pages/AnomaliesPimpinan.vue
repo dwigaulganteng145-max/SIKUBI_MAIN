@@ -80,6 +80,7 @@ function toggleExpand(id) {
                     </div>
                     <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field !w-auto !pr-8 max-w-full sm:max-w-[220px] flex-shrink-0">
                         <option value="">Semua Rekening</option>
+                        <option value="cash">💵 Transaksi Tunai</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
                 </div>
@@ -183,7 +184,7 @@ function toggleExpand(id) {
                                 <p class="text-sm font-semibold text-plum truncate">{{ flag.transaction?.description }}</p>
                                 <p class="text-xs text-surface-500 mt-0.5">
                                     {{ formatDate(flag.transaction?.transaction_date) }}
-                                    · {{ flag.transaction?.bank_account?.account_alias || flag.transaction?.bank_account?.bank_name || '-' }}
+                                    · {{ flag.transaction?.bank_account?.account_alias || flag.transaction?.bank_account?.bank_name || (flag.transaction?.source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-') }}
                                 </p>
                             </div>
 

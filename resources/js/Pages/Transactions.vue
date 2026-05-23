@@ -120,6 +120,7 @@ function getCategoriesByType(type) {
                         </select>
                         <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="filter-field !w-auto min-w-[130px]">
                             <option value="">Semua Rekening</option>
+                            <option value="cash">💵 Transaksi Tunai</option>
                             <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                         </select>
                         <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4">Cari</button>
@@ -168,7 +169,7 @@ function getCategoriesByType(type) {
                                             Belum Terkategori
                                         </span>
                                     </td>
-                                    <td class="text-xs">{{ tx.bank_account?.account_alias || tx.bank_account?.bank_name }}</td>
+                                    <td class="text-xs">{{ tx.bank_account?.account_alias || tx.bank_account?.bank_name || (tx.source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-') }}</td>
                                     <td :class="['text-right font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                         {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
                                     </td>
@@ -195,7 +196,7 @@ function getCategoriesByType(type) {
                             </div>
                             <div class="flex justify-between items-center text-xs text-surface-500">
                                 <span>{{ formatDate(tx.transaction_date) }}</span>
-                                <span>Rekening: {{ tx.bank_account?.account_alias || tx.bank_account?.bank_name }}</span>
+                                <span>Rekening: {{ tx.bank_account?.account_alias || tx.bank_account?.bank_name || (tx.source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-') }}</span>
                             </div>
                             
                             <div class="pt-2 border-t border-rose-50/50 flex justify-between items-center text-xs">

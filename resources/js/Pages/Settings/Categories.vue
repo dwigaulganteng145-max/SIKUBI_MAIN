@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 
@@ -11,7 +11,13 @@ const showForm = ref(false);
 const showHelp = ref(false);
 const selectedAccountId = ref(props.filters?.account_id || '');
 const selectedMonth = ref(props.filters?.month || '');
-const form = useForm({ name: '', type: 'CREDIT', color: '#E8637A', icon: 'folder', bank_account_id: '' });
+const form = useForm({
+    name: '',
+    type: 'CREDIT',
+    color: '#E8637A',
+    icon: 'folder',
+    bank_account_id: props.filters?.account_id === 'cash' ? '' : (props.filters?.account_id || '')
+});
 
 const showDeleteModal = ref(false);
 const deleteTarget = ref(null);
@@ -36,12 +42,12 @@ function approveCategory(cat) {
 
 // Bank account filter
 watch(selectedAccountId, (val) => {
-    form.bank_account_id = val;
+    form.bank_account_id = val === 'cash' ? '' : val;
     router.get('/settings/categories', {
-        account_id: selectedAccountId.value || undefined,
+        account_id: val || undefined,
         month: selectedMonth.value || undefined,
     }, { preserveState: true, preserveScroll: true });
-}, { immediate: true });
+});
 
 // Month filter
 function selectMonth(m) {
@@ -63,6 +69,24 @@ function bankLabel(cat) {
     if (!cat.bank_account) return 'Global';
     return cat.bank_account.account_alias || cat.bank_account.bank_name;
 }
+
+function getTransactionLink(cat) {
+    const params = new URLSearchParams();
+    params.set('category_id', cat.id);
+    
+    if (selectedAccountId.value) {
+        params.set('account_id', selectedAccountId.value);
+    }
+    
+    if (selectedMonth.value) {
+        const [year, month] = selectedMonth.value.split('-');
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        params.set('date_from', `${year}-${month.padStart(2, '0')}-01`);
+        params.set('date_to', `${year}-${month.padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`);
+    }
+    
+    return '/transactions?' + params.toString();
+}
 </script>
 
 <template>
@@ -75,7 +99,8 @@ function bankLabel(cat) {
                     <p class="text-sm text-surface-600 mt-1">Kelola kategori transaksi keuangan</p>
                 </div>
                 <div class="flex gap-2">
-                    <select v-if="accounts?.length" v-model="selectedAccountId" class="input-field !w-auto !pr-8 text-sm !py-2">
+                    <select v-model="selectedAccountId" class="input-field !w-auto !pr-8 text-sm !py-2">
+                        <option value="cash">💵 Transaksi Tunai</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
                     <button @click="showHelp = !showHelp" class="btn-secondary" title="Bantuan">
@@ -164,7 +189,7 @@ function bankLabel(cat) {
             <div v-else-if="categories.length > 0" class="glass-card overflow-hidden">
                 <div class="hidden sm:block table-container">
                     <table class="data-table">
-                        <thead><tr><th>Nama</th><th>Tipe</th><th>Transaksi</th><th>Aturan</th><th v-if="canManage"></th></tr></thead>
+                        <thead><tr><th>Nama</th><th>Tipe</th><th>Transaksi</th><th v-if="canManage"></th></tr></thead>
                         <tbody>
                             <tr v-for="cat in categories" :key="cat.id" :class="cat.is_suggested ? 'bg-amber-50/30' : ''">
                                 <td>
@@ -175,8 +200,14 @@ function bankLabel(cat) {
                                     </div>
                                 </td>
                                 <td><span :class="cat.type === 'DEBIT' ? 'badge-green' : 'badge-red'">{{ cat.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}</span></td>
-                                <td>{{ cat.transactions_count }}</td>
-                                <td>{{ cat.classification_rules_count }}</td>
+                                <td>
+                                    <Link :href="getTransactionLink(cat)" class="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-plum hover:bg-rose-100/80 hover:text-rose-gold border border-rose-200/50 rounded-xl transition-all text-xs font-semibold shadow-sm">
+                                        <span>{{ cat.transactions_count }} Transaksi</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                        </svg>
+                                    </Link>
+                                </td>
                                 <td v-if="canManage">
                                     <div class="flex items-center gap-1">
                                         <button v-if="cat.is_suggested" @click="approveCategory(cat)" class="text-emerald-500 hover:text-emerald-700 p-1 rounded-lg hover:bg-emerald-50 transition-colors" title="Setujui kategori">
@@ -195,6 +226,11 @@ function bankLabel(cat) {
                     <div v-for="cat in categories" :key="cat.id" class="mobile-card flex items-center justify-between">
                         <div>
                             <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" :style="{ background: cat.color }" /><span class="font-medium">{{ cat.name }}</span></div>
+                            <div class="mt-1.5">
+                                <Link :href="getTransactionLink(cat)" class="inline-flex items-center gap-1 text-xs text-plum font-semibold underline hover:text-rose-gold">
+                                    {{ cat.transactions_count }} Transaksi
+                                </Link>
+                            </div>
                         </div>
                         <span :class="cat.type === 'DEBIT' ? 'badge-green' : 'badge-red'">{{ cat.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}</span>
                     </div>

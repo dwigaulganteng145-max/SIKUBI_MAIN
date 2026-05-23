@@ -51,25 +51,31 @@ class SettingsController extends Controller
 
         $query = Category::with('bankAccount:id,bank_name,account_alias');
 
-        // Add transaction count filtered by month
-        if ($month) {
-            $startOfMonth = \Carbon\Carbon::parse($month . '-01')->startOfMonth();
-            $endOfMonth = \Carbon\Carbon::parse($month . '-01')->endOfMonth();
-
-            $query->withCount([
-                'transactions' => function ($q) use ($startOfMonth, $endOfMonth) {
+        // Add transaction count filtered by month and account
+        $query->withCount([
+            'transactions' => function ($q) use ($month, $effectiveAccountId) {
+                if ($month) {
+                    $startOfMonth = \Carbon\Carbon::parse($month . '-01')->startOfMonth();
+                    $endOfMonth = \Carbon\Carbon::parse($month . '-01')->endOfMonth();
                     $q->whereBetween('transaction_date', [$startOfMonth, $endOfMonth]);
-                },
-                'classificationRules',
-            ]);
-        } else {
-            $query->withCount('transactions', 'classificationRules');
-        }
+                }
+                if ($effectiveAccountId === 'cash') {
+                    $q->whereNull('bank_account_id')->where('source', 'CASH_MANUAL');
+                } else {
+                    $q->where('bank_account_id', $effectiveAccountId);
+                }
+            },
+            'classificationRules',
+        ]);
 
         if ($effectiveAccountId) {
             $query->where(function ($q) use ($effectiveAccountId) {
-                $q->where('bank_account_id', $effectiveAccountId)
-                  ->orWhereNull('bank_account_id');
+                if ($effectiveAccountId === 'cash') {
+                    $q->whereNull('bank_account_id');
+                } else {
+                    $q->where('bank_account_id', $effectiveAccountId)
+                      ->orWhereNull('bank_account_id');
+                }
             });
         }
 

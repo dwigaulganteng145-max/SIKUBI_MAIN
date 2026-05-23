@@ -58,7 +58,7 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
             <div class="glass-card p-4 sm:p-6 bg-gradient-to-r from-rose-50 via-white to-champagne-50 border-rose-200/40">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="min-w-0">
-                        <h1 class="text-lg sm:text-2xl font-display font-bold text-plum truncate">
+                        <h1 class="text-lg sm:text-2xl font-display font-medium text-plum truncate">
                             Selamat {{ greeting }}, {{ user?.name?.split(' ')[0] || 'Pimpinan' }} 👋
                         </h1>
                         <p class="text-xs sm:text-sm text-surface-600 mt-0.5 truncate">Ringkasan keuangan PT Bigenmi Gemilang Indonesia</p>
@@ -165,7 +165,11 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm text-plum truncate">{{ tx.description }}</p>
-                                    <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span></p>
+                                    <p class="text-xs text-surface-500">
+                                        {{ formatDate(tx.transaction_date) }}
+                                        <span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span>
+                                        <span class="ml-1 text-[11px] font-semibold text-rose-gold/80">· {{ tx.bank_account?.account_alias || tx.bank_account?.bank_name || (tx.source === 'CASH_MANUAL' ? 'Transaksi Tunai' : '-') }}</span>
+                                    </p>
                                 </div>
                                 <p :class="['text-sm font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                     {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
