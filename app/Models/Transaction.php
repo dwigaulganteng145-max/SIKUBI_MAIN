@@ -13,7 +13,7 @@ class Transaction extends Model
     protected $fillable = [
         'import_batch_id', 'bank_account_id', 'transaction_date', 'description',
         'amount', 'type', 'category_id', 'classification_method',
-        'confidence_score', 'raw_data', 'deduplication_hash',
+        'confidence_score', 'raw_data', 'deduplication_hash', 'source',
     ];
 
     protected function casts(): array
@@ -62,5 +62,15 @@ class Transaction extends Model
             return $query->where('bank_account_id', $accountId);
         }
         return $query;
+    }
+
+    public function scopeCash($query)
+    {
+        return $query->where('source', 'CASH_MANUAL');
+    }
+
+    public function scopeImported($query)
+    {
+        return $query->where('source', 'IMPORT');
     }
 }

@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
                 'canDetectAnomalies' => $user?->isAdmin() ?? false,
                 'canManageUsers' => $user?->isDirektur() ?? false,
                 'canEditTransactions' => $user?->isAdmin() ?? false,
+                'canManageCashTransactions' => $user?->isAdmin() ?? false,
             ],
             'notifications' => fn () => $user ? $this->getNotifications($user) : ['items' => [], 'unread_count' => 0],
             'flash' => [

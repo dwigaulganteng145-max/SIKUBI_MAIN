@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnomalyController;
 use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\CashTransactionController;
 use App\Http\Controllers\CsvImportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
@@ -19,6 +20,7 @@ require __DIR__ . '/auth.php';
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/cash-transactions', [CashTransactionController::class, 'index'])->name('cash.index');
 
     // Profile — everyone can edit their own
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -38,7 +40,10 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
 
     // Transactions (edit)
     Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
-    Route::get('/transactions/export', [TransactionController::class, 'export'])->name('transactions.export');
+
+    // Cash Transactions (CRUD)
+    Route::post('/cash-transactions', [CashTransactionController::class, 'store'])->name('cash.store');
+    Route::delete('/cash-transactions/{transaction}', [CashTransactionController::class, 'destroy'])->name('cash.destroy');
 
     // CSV Import
     Route::get('/import', [CsvImportController::class, 'index'])->name('import.index');

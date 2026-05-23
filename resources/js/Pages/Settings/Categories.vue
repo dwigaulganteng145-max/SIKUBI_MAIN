@@ -4,12 +4,13 @@ import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 
-const props = defineProps({ categories: Array, accounts: Array, filters: Object, hasData: { type: Boolean, default: true } });
+const props = defineProps({ categories: Array, accounts: Array, filters: Object, hasData: { type: Boolean, default: true }, availableMonths: { type: Array, default: () => [] } });
 const page = usePage();
 const canManage = page.props.permissions?.canManageSettings;
 const showForm = ref(false);
 const showHelp = ref(false);
 const selectedAccountId = ref(props.filters?.account_id || '');
+const selectedMonth = ref(props.filters?.month || '');
 const form = useForm({ name: '', type: 'CREDIT', color: '#E8637A', icon: 'folder', bank_account_id: '' });
 
 const showDeleteModal = ref(false);
@@ -38,8 +39,25 @@ watch(selectedAccountId, (val) => {
     form.bank_account_id = val;
     router.get('/settings/categories', {
         account_id: selectedAccountId.value || undefined,
+        month: selectedMonth.value || undefined,
     }, { preserveState: true, preserveScroll: true });
 }, { immediate: true });
+
+// Month filter
+function selectMonth(m) {
+    selectedMonth.value = m;
+    router.get('/settings/categories', {
+        account_id: selectedAccountId.value || undefined,
+        month: m || undefined,
+    }, { preserveState: true, preserveScroll: true });
+}
+
+function formatMonth(m) {
+    if (!m) return '';
+    const [y, mo] = m.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${months[parseInt(mo) - 1]} ${y}`;
+}
 
 function bankLabel(cat) {
     if (!cat.bank_account) return 'Global';
@@ -65,6 +83,28 @@ function bankLabel(cat) {
                         Bantuan
                     </button>
                     <button v-if="canManage" @click="showForm = !showForm" class="btn-primary">+ Tambah</button>
+                </div>
+            </div>
+
+            <!-- Month Filter Panel -->
+            <div v-if="availableMonths?.length > 0" class="glass-card p-3 sm:p-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                    <span class="text-xs font-semibold text-surface-600 uppercase tracking-wider">Filter Bulan</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                    <button
+                        v-for="m in availableMonths" :key="m"
+                        @click="selectMonth(m)"
+                        :class="[
+                            'px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200',
+                            selectedMonth === m
+                                ? 'bg-gradient-rose text-white shadow-sm scale-[1.02]'
+                                : 'bg-cream-200/50 text-surface-600 hover:bg-cream-300/60 hover:text-plum'
+                        ]"
+                    >
+                        {{ formatMonth(m) }}
+                    </button>
                 </div>
             </div>
 

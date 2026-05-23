@@ -41,20 +41,7 @@ function onDateUpdate(val) {
     }
 }
 
-const isExporting = ref(false);
 
-function exportCsv() {
-    isExporting.value = true;
-    const params = new URLSearchParams(buildParams());
-    const url = '/transactions/export?' + params.toString();
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', '');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => { isExporting.value = false; }, 2000);
-}
 
 function formatCurrency(v) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v); }
 function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); }
@@ -109,22 +96,12 @@ function getCategoriesByType(type) {
 </script>
 
 <template>
-    <Head title="Transaksi — SIKUBI" />
+    <Head title="Daftar Transaksi — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h1 class="page-title text-lg sm:text-2xl">Transaksi</h1>
-                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Riwayat seluruh transaksi keuangan</p>
-                </div>
-                <button v-if="isAdmin" @click="exportCsv" :disabled="isExporting" class="btn-secondary text-xs gap-1.5 w-full sm:w-auto justify-center sm:justify-start">
-                    <svg v-if="isExporting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3" /></svg>
-                    {{ isExporting ? 'Memproses...' : 'Export CSV' }}
-                </button>
+            <div>
+                <h1 class="page-title text-lg sm:text-2xl">Daftar Transaksi</h1>
+                <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Riwayat seluruh transaksi keuangan</p>
             </div>
 
             <div class="glass-card p-4 sm:p-5">
