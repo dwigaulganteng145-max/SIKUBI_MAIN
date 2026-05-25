@@ -10,6 +10,7 @@ class AnomalyFlag extends Model
     protected $fillable = [
         'transaction_id', 'detection_method', 'score', 'severity',
         'reason', 'is_reviewed', 'is_dismissed', 'review_note', 'detected_at',
+        'ask_pimpinan_review', 'pimpinan_review_status', 'pimpinan_review_note',
     ];
 
     protected function casts(): array
@@ -19,6 +20,7 @@ class AnomalyFlag extends Model
             'is_reviewed' => 'boolean',
             'is_dismissed' => 'boolean',
             'detected_at' => 'datetime',
+            'ask_pimpinan_review' => 'boolean',
         ];
     }
 

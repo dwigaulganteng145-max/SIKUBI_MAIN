@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, inject } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DateRangePicker from '@/Components/DateRangePicker.vue';
@@ -12,12 +12,17 @@ const props = defineProps({
 });
 
 const page = usePage();
+const addToast = inject('addToast');
+
 const selectedAccountId = ref(props.filters?.account_id || '');
 const dateFilters = ref({
     preset: props.filters?.preset || null,
     date_from: props.filters?.date_from || null,
     date_to: props.filters?.date_to || null,
 });
+
+const pimpinanNote = ref('');
+const isSubmitting = ref(false);
 
 function reloadData() {
     router.get('/anomalies/check', {
@@ -57,6 +62,25 @@ function subtypeLabel(method) {
 const expandedId = ref(null);
 function toggleExpand(id) {
     expandedId.value = expandedId.value === id ? null : id;
+    pimpinanNote.value = '';
+}
+
+function submitPimpinanReview(flag, status) {
+    isSubmitting.value = true;
+    router.post(`/anomalies/${flag.id}/pimpinan-review`, {
+        status: status,
+        note: pimpinanNote.value || null,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            pimpinanNote.value = '';
+            isSubmitting.value = false;
+            addToast?.('Tinjauan Pimpinan berhasil disimpan', 'success');
+        },
+        onError: () => {
+            isSubmitting.value = false;
+        }
+    });
 }
 </script>
 
@@ -90,7 +114,7 @@ function toggleExpand(id) {
             </div>
 
             <!-- KPI Stat Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
                 <div class="glass-card p-4 sm:p-5 group hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-amber-400">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Total Anomali</span>
@@ -101,9 +125,19 @@ function toggleExpand(id) {
                     <p class="stat-value text-amber-600 text-xl sm:text-2xl">{{ stats?.totalCount || 0 }}</p>
                     <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Seluruh anomali terdeteksi</p>
                 </div>
+                <div class="glass-card p-4 sm:p-5 group hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50/10 to-transparent">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Tinjauan Anda</span>
+                        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002 2h2a2 2 0 002-2" /></svg>
+                        </div>
+                    </div>
+                    <p class="stat-value text-purple-600 text-xl sm:text-2xl">{{ stats?.pimpinanPendingCount || 0 }}</p>
+                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Menunggu tinjauan Pimpinan</p>
+                </div>
                 <div class="glass-card p-4 sm:p-5 group hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-rose-400">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Belum Ditinjau</span>
+                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Tinjauan Admin</span>
                         <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
@@ -249,6 +283,63 @@ function toggleExpand(id) {
                                 <div v-else>
                                     <p class="text-xs text-amber-700 font-semibold">🚨 Anomali ini belum diverifikasi oleh Admin Keuangan.</p>
                                     <p class="text-[10px] text-amber-600/80 mt-1">Menunggu proses tinjauan atau konfirmasi dari pihak admin.</p>
+                                </div>
+                            </div>
+
+                            <!-- Pimpinan Review Section -->
+                            <div v-if="flag.ask_pimpinan_review" class="rounded-xl border p-4 shadow-sm" :class="flag.pimpinan_review_status === 'PENDING' ? 'bg-purple-50/40 border-purple-200/50 ring-1 ring-purple-100' : (flag.pimpinan_review_status === 'ANOMALY' ? 'bg-red-50/30 border-red-200/40' : 'bg-emerald-50/30 border-emerald-200/40')">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div :class="['w-6 h-6 rounded-lg flex items-center justify-center', flag.pimpinan_review_status === 'PENDING' ? 'bg-purple-500 animate-pulse' : (flag.pimpinan_review_status === 'ANOMALY' ? 'bg-red-500' : 'bg-emerald-500')]">
+                                        <svg v-if="flag.pimpinan_review_status === 'PENDING'" class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" /></svg>
+                                        <svg v-else-if="flag.pimpinan_review_status === 'ANOMALY'" class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                        <svg v-else class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                    </div>
+                                    <h4 class="text-xs font-bold uppercase tracking-wider" :class="flag.pimpinan_review_status === 'PENDING' ? 'text-purple-700' : (flag.pimpinan_review_status === 'ANOMALY' ? 'text-red-700' : 'text-emerald-700')">
+                                        {{ flag.pimpinan_review_status === 'PENDING' ? 'Tinjauan Pimpinan Diperlukan' : 'Keputusan Tinjauan Anda' }}
+                                    </h4>
+                                </div>
+
+                                <div v-if="flag.pimpinan_review_status === 'PENDING'">
+                                    <p class="text-xs text-purple-700 font-semibold mb-3">Admin Keuangan meminta Anda untuk meninjau apakah transaksi ini merupakan anomali nyata atau transaksi valid.</p>
+                                    
+                                    <!-- Review Note Input -->
+                                    <div class="mb-3">
+                                        <label class="block text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-1">Catatan Keputusan Anda (opsional)</label>
+                                        <textarea
+                                            v-model="pimpinanNote"
+                                            class="w-full text-xs rounded-xl border-purple-200 focus:border-purple-500 focus:ring focus:ring-purple-200/50 p-2.5 resize-none bg-white/90"
+                                            rows="2"
+                                            placeholder="Berikan alasan atau instruksi lanjutan..."
+                                            :disabled="isSubmitting"
+                                        ></textarea>
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="flex gap-2">
+                                        <button
+                                            @click="submitPimpinanReview(flag, 'VALID')"
+                                            class="flex-1 btn-primary !bg-emerald-600 hover:!bg-emerald-700 text-xs !py-2 border-none flex items-center justify-center gap-1 font-semibold rounded-xl text-white disabled:opacity-50"
+                                            :disabled="isSubmitting"
+                                        >
+                                            🟢 Nyatakan Transaksi Valid
+                                        </button>
+                                        <button
+                                            @click="submitPimpinanReview(flag, 'ANOMALY')"
+                                            class="flex-1 btn-primary !bg-red-600 hover:!bg-red-700 text-xs !py-2 border-none flex items-center justify-center gap-1 font-semibold rounded-xl text-white disabled:opacity-50"
+                                            :disabled="isSubmitting"
+                                        >
+                                            🔴 Konfirmasi Sebagai Anomali
+                                        </button>
+                                    </div>
+                                </div>
+                                <div v-else>
+                                    <p class="text-xs font-semibold" :class="flag.pimpinan_review_status === 'ANOMALY' ? 'text-red-700' : 'text-emerald-700'">
+                                        {{ flag.pimpinan_review_status === 'ANOMALY' ? '🔴 Anda mengonfirmasi transaksi ini sebagai Anomali Keuangan.' : '🟢 Anda menyatakan transaksi ini Valid (Bukan Anomali).' }}
+                                    </p>
+                                    <div v-if="flag.pimpinan_review_note" class="mt-2 p-2.5 rounded-lg bg-white/80 border border-surface-200/60">
+                                        <p class="text-[10px] text-surface-500 font-semibold uppercase tracking-wider mb-1">Catatan Keputusan Anda:</p>
+                                        <p class="text-xs text-surface-700 italic leading-relaxed">"{{ flag.pimpinan_review_note }}"</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

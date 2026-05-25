@@ -21,7 +21,6 @@ const isDismissing = ref(false);
 // Template notes
 const noteTemplates = [
     'Sudah dikonfirmasi — transaksi valid.',
-    'Perlu ditindaklanjuti oleh pimpinan.',
     'Transaksi sudah diverifikasi dengan bukti transfer.',
     'Nominal sesuai dengan invoice/PO.',
     'Transaksi rutin, bukan anomali.',
@@ -63,6 +62,15 @@ function submitReview() {
             reviewingFlag.value = null;
             addToast?.(isDismissing.value ? 'Anomali diabaikan' : 'Anomali telah ditinjau', 'success');
         },
+    });
+}
+
+function requestPimpinan(flag) {
+    router.post(`/anomalies/${flag.id}/request-pimpinan`, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            addToast?.('Permintaan tinjauan dikirim ke Pimpinan', 'success');
+        }
     });
 }
 
@@ -185,22 +193,49 @@ function subtypeLabel(method) {
 
                             <!-- Review note (if reviewed) -->
                             <div v-if="flag.is_reviewed && flag.review_note" class="mt-2 text-xs bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-blue-700">
-                                📝 <strong>Catatan:</strong> {{ flag.review_note }}
+                                📝 <strong>Catatan Admin:</strong> {{ flag.review_note }}
+                            </div>
+
+                            <!-- Pimpinan note (if pimpinan reviewed) -->
+                            <div v-if="flag.ask_pimpinan_review && flag.pimpinan_review_status !== 'PENDING' && flag.pimpinan_review_note" class="mt-2 text-xs bg-purple-50 border border-purple-200 rounded-lg p-2.5 text-purple-700">
+                                👑 <strong>Catatan Pimpinan:</strong> {{ flag.pimpinan_review_note }}
                             </div>
                         </div>
 
                         <!-- Actions -->
-                        <div v-if="!flag.is_reviewed" class="flex gap-2 flex-shrink-0">
-                            <button @click="openReview(flag, false)" class="btn-secondary text-xs !py-1.5 !px-3">
-                                ✍ Tinjau
-                            </button>
-                            <button @click="openReview(flag, true)" class="btn-ghost text-xs !py-1.5 !px-3">
-                                Abaikan
-                            </button>
+                        <div v-if="!flag.is_reviewed" class="flex flex-col sm:flex-row gap-2 flex-shrink-0 items-stretch sm:items-center">
+                            <template v-if="!flag.ask_pimpinan_review">
+                                <div class="flex gap-1.5">
+                                    <button @click="openReview(flag, false)" class="btn-secondary text-xs !py-1.5 !px-3 font-semibold">
+                                        ✍ Tinjau
+                                    </button>
+                                    <button @click="openReview(flag, true)" class="btn-ghost text-xs !py-1.5 !px-3 font-semibold">
+                                        Abaikan
+                                    </button>
+                                </div>
+                                <button @click="requestPimpinan(flag)" class="btn-primary !bg-gradient-to-r !from-violet-600 !to-indigo-600 hover:!from-violet-700 hover:!to-indigo-700 text-xs !py-1.5 !px-3 border-none flex items-center justify-center gap-1 font-semibold shadow-sm rounded-xl">
+                                    📩 Minta Tinjau Pimpinan
+                                </button>
+                            </template>
+                            <template v-else>
+                                <span class="badge text-[10px] bg-purple-50 text-purple-700 border border-purple-200 font-bold animate-pulse inline-flex items-center gap-1 py-1 px-2.5 rounded-lg">
+                                    ⏳ Menunggu Tinjauan Pimpinan
+                                </span>
+                            </template>
                         </div>
-                        <div v-else class="flex items-center gap-2 flex-shrink-0">
-                            <span v-if="flag.is_dismissed" class="badge text-[10px] bg-surface-100 text-surface-500 border border-surface-200">⚠ Diabaikan</span>
-                            <span v-else class="badge-green text-[10px]">✓ Ditinjau</span>
+                        <div v-else class="flex flex-col items-end gap-2 flex-shrink-0">
+                            <div v-if="flag.ask_pimpinan_review && flag.pimpinan_review_status !== 'PENDING'">
+                                <span v-if="flag.pimpinan_review_status === 'ANOMALY'" class="badge text-[10px] bg-red-50 text-red-700 border border-red-200 font-bold py-1 px-2.5 rounded-lg">
+                                    🔴 Pimpinan: Konfirmasi Anomali
+                                </span>
+                                <span v-else-if="flag.pimpinan_review_status === 'VALID'" class="badge text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold py-1 px-2.5 rounded-lg">
+                                    🟢 Pimpinan: Transaksi Valid
+                                </span>
+                            </div>
+                            <div v-else>
+                                <span v-if="flag.is_dismissed" class="badge text-[10px] bg-surface-100 text-surface-500 border border-surface-200 font-semibold py-1 px-2.5 rounded-lg">⚠ Diabaikan</span>
+                                <span v-else class="badge-green text-[10px] font-semibold py-1 px-2.5 rounded-lg">✓ Ditinjau</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
     Route::get('/anomalies', [AnomalyController::class, 'index'])->name('anomalies.index');
     Route::post('/anomalies/detect', [AnomalyController::class, 'detect'])->name('anomalies.detect');
     Route::patch('/anomalies/{id}', [AnomalyController::class, 'review'])->name('anomalies.review');
+    Route::post('/anomalies/{id}/request-pimpinan', [AnomalyController::class, 'requestPimpinanReview'])->name('anomalies.request-pimpinan');
 
     // Settings (CRUD)
     Route::post('/settings/categories', [SettingsController::class, 'storeCategory'])->name('settings.categories.store');
@@ -74,6 +75,7 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
 // ── Direktur only ──
 Route::middleware(['auth', 'verified', 'role:DIREKTUR'])->group(function () {
     Route::get('/anomalies/check', [AnomalyController::class, 'pimpinanIndex'])->name('anomalies.check');
+    Route::post('/anomalies/{id}/pimpinan-review', [AnomalyController::class, 'pimpinanReview'])->name('anomalies.pimpinan-review');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');

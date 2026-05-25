@@ -103,6 +103,45 @@ class AnomalyController extends Controller
     }
 
     /**
+     * Request a review for an anomaly flag from the Pimpinan (Leader).
+     */
+    public function requestPimpinanReview(Request $request, $id)
+    {
+        $flag = AnomalyFlag::findOrFail($id);
+
+        $flag->update([
+            'ask_pimpinan_review' => true,
+            'pimpinan_review_status' => 'PENDING',
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Submit Pimpinan's review on an anomaly flag.
+     */
+    public function pimpinanReview(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:ANOMALY,VALID',
+            'note' => 'nullable|string',
+        ]);
+
+        $flag = AnomalyFlag::findOrFail($id);
+        $status = $request->input('status');
+        $note = $request->input('note');
+
+        $flag->update([
+            'pimpinan_review_status' => $status,
+            'pimpinan_review_note' => $note,
+            'is_reviewed' => true,
+            'is_dismissed' => $status === 'VALID',
+        ]);
+
+        return back();
+    }
+
+    /**
      * Show anomalies page for Pimpinan.
      */
     public function pimpinanIndex(Request $request)
@@ -124,6 +163,8 @@ class AnomalyController extends Controller
         $totalAnomalies = (clone $query)->get();
         $unreviewedCount = $totalAnomalies->filter(fn($a) => !$a->is_reviewed)->count();
         $reviewedCount = $totalAnomalies->filter(fn($a) => $a->is_reviewed && !$a->is_dismissed)->count();
+        $pimpinanPendingCount = $totalAnomalies->filter(fn($a) => $a->ask_pimpinan_review && $a->pimpinan_review_status === 'PENDING')->count();
+        $pimpinanReviewedCount = $totalAnomalies->filter(fn($a) => $a->ask_pimpinan_review && $a->pimpinan_review_status !== 'PENDING')->count();
 
         // Paginate anomalies
         $anomalies = $query->paginate(20)->withQueryString();
@@ -141,6 +182,8 @@ class AnomalyController extends Controller
                 'unreviewedCount' => $unreviewedCount,
                 'reviewedCount' => $reviewedCount,
                 'totalCount' => $totalAnomalies->count(),
+                'pimpinanPendingCount' => $pimpinanPendingCount,
+                'pimpinanReviewedCount' => $pimpinanReviewedCount,
             ],
         ]);
     }
